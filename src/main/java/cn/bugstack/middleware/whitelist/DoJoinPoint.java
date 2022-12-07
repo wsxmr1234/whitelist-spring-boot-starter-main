@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 博客：https://bugstack.cn - 沉淀、分享、成长，让自己和他人都能有所收获！
@@ -42,7 +44,8 @@ public class DoJoinPoint {
         DoWhiteList whiteList = method.getAnnotation(DoWhiteList.class);
 
         // 获取字段值
-        String keyValue = getFiledValue(whiteList.key(), jp.getArgs());
+//        String keyValue = getFiledValue(whiteList.key(), jp.getArgs());
+        String keyValue = getFiledValue(whiteList.key(), jp);
         logger.info("middleware whitelist handler method：{} value：{}", method.getName(), keyValue);
         if (null == keyValue || "".equals(keyValue)) return jp.proceed();
 
@@ -66,6 +69,7 @@ public class DoJoinPoint {
     }
 
     // 返回对象
+//    @SuppressWarnings("deprecation")
     private Object returnObject(DoWhiteList whiteList, Method method) throws IllegalAccessException, InstantiationException {
         Class<?> returnType = method.getReturnType();
         String returnJson = whiteList.returnJson();
@@ -76,6 +80,7 @@ public class DoJoinPoint {
     }
 
     // 获取属性值
+    @Deprecated
     private String getFiledValue(String filed, Object[] args) {
         String filedValue = null;
         for (Object arg : args) {
@@ -93,5 +98,21 @@ public class DoJoinPoint {
         }
         return filedValue;
     }
+
+    private String getFiledValue(String filed, ProceedingJoinPoint jp) {
+        Signature sig = jp.getSignature();
+        MethodSignature methodSignature = (MethodSignature) sig;
+
+        Map<String, String> vmap = new HashMap<>();
+        String[] names = methodSignature.getParameterNames();
+        Object[] values = jp.getArgs();
+        for (int i = 0; i < names.length; i++) {
+            if (null != values[i] && !"".equals(names[i]) && values[i] instanceof String) {
+                vmap.put(names[i], values[i].toString());
+            }
+        }
+        return vmap.get(filed);
+    }
+
 
 }
